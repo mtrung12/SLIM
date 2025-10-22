@@ -134,6 +134,9 @@ class Trainer_woISeq(object):
         logger.info("  Batch size = %d", self.args.eval_batch_size)
         eval_loss = 0.0
         nb_eval_steps = 0
+        
+        all_input_ids_list = []
+        
         intent_preds = None
         slot_preds = None
         out_intent_label_ids = None
@@ -155,6 +158,8 @@ class Trainer_woISeq(object):
 
                 eval_loss += tmp_eval_loss.mean().item()
             nb_eval_steps += 1
+            
+            all_input_ids_list.append(inputs["input_ids"].detach().cpu().numpy())
 
             # Intent prediction
             if intent_preds is None:
@@ -187,6 +192,8 @@ class Trainer_woISeq(object):
             "loss": eval_loss
         }
 
+        all_input_ids = np.concatenate(all_input_ids_list, axis=0)
+        
         # Intent result
         intent_preds = torch.as_tensor(intent_preds > 0.5, dtype=torch.int32)
 
@@ -210,6 +217,8 @@ class Trainer_woISeq(object):
         for key in sorted(results.keys()):
             logger.info("  %s = %s", key, str(results[key]))
 
+        self.save_wrong_predictions(mode, all_input_ids, intent_preds, out_intent_label_ids, slot_preds, out_slot_labels_ids)
+        
         return results
 
     def save_model(self):
@@ -237,3 +246,90 @@ class Trainer_woISeq(object):
             logger.info("***** Model Loaded *****")
         except:
             raise Exception("Some model files might be missing...")
+    
+    def save_wrong_predictions(self, mode, all_input_ids, intent_preds, intent_labels, slot_preds, slot_labels):
+        """
+        Save wrong predictions to a file.
+        Works for both single- and multi-intent.
+        """
+        # Ensure all are numpy arrays on CPU
+        if isinstance(intent_preds, torch.Tensor):
+            intent_preds = intent_preds.cpu().numpy()
+        if isinstance(intent_labels, torch.Tensor):
+            intent_labels = intent_labels.cpu().numpy()
+        if isinstance(slot_preds, torch.Tensor):
+            slot_preds = slot_preds.cpu().numpy()
+        if isinstance(slot_labels, torch.Tensor):
+            slot_labels = slot_labels.cpu().numpy()
+        if isinstance(all_input_ids, torch.Tensor):
+            all_input_ids = all_input_ids.cpu().numpy()
+
+        output_file = os.path.join(self.args.prediction_dir, f"wrong_predictions_{mode}.txt")
+        wrong_examples = []
+        
+        # Detect if multi-intent by checking the dimensions of the labels
+        is_multi_intent = (intent_labels.ndim == 2)
+
+        for i in range(len(intent_labels)):
+            intent_mismatch = False
+            intent_pred_str = ""
+            intent_true_str = ""
+
+            if is_multi_intent:
+                # Multi-intent logic (binary array comparison)
+                intent_mismatch = not np.array_equal(intent_preds[i], intent_labels[i])
+                pred_labels = [self.intent_label_lst[idx] for idx, val in enumerate(intent_preds[i]) if val == 1]
+                true_labels = [self.intent_label_lst[idx] for idx, val in enumerate(intent_labels[i]) if val == 1]
+                intent_pred_str = ", ".join(pred_labels) if pred_labels else "None"
+                intent_true_str = ", ".join(true_labels) if true_labels else "None"
+            else:
+                # Single-intent logic (index comparison)
+                intent_mismatch = (intent_preds[i] != intent_labels[i])
+                intent_pred_str = self.intent_label_lst[intent_preds[i]]
+                intent_true_str = self.intent_label_lst[intent_labels[i]]
+
+            # Slot logic (same for both)
+            slot_mismatch = False
+            current_slot_preds = slot_preds[i]
+            current_slot_labels = slot_labels[i]
+            
+            slot_pred_labels = []
+            slot_true_labels = []
+
+            for j in range(len(current_slot_labels)):
+                # Check for mismatch on non-padded tokens
+                if current_slot_labels[j] != self.pad_token_label_id:
+                    if current_slot_preds[j] != current_slot_labels[j]:
+                        slot_mismatch = True
+                
+                # Store labels for printing (even PAD tokens)
+                # This assumes index 0 maps to "PAD"
+                slot_pred_labels.append(self.slot_label_lst[current_slot_preds[j]])
+                slot_true_labels.append(self.slot_label_lst[current_slot_labels[j]])
+            
+            if intent_mismatch or slot_mismatch:
+                wrong_examples.append({
+                    "input_ids": all_input_ids[i].tolist(),
+                    "intent_pred": intent_pred_str,
+                    "intent_true": intent_true_str,
+                    "slot_pred": " ".join(slot_pred_labels),
+                    "slot_true": " ".join(slot_true_labels)
+                })
+        
+        # Write to file
+        try:
+            with open(output_file, "w", encoding="utf-8") as f:
+                f.write(f"***** Wrong Predictions ({mode.capitalize()} Set) *****\n")
+                f.write(f"Total wrong examples: {len(wrong_examples)}\n")
+                f.write("========================================\n\n")
+                
+                for idx, ex in enumerate(wrong_examples):
+                    f.write(f"Example {idx + 1}\n")
+                    f.write(f"Input IDs:   {ex['input_ids']}\n")
+                    f.write(f"Intent Pred: {ex['intent_pred']} (True: {ex['intent_true']})\n")
+                    f.write(f"Slot Pred:   {ex['slot_pred']}\n")
+                    f.write(f"Slot True:   {ex['slot_true']}\n")
+                    f.write("----------------------------------------\n")
+            logger.info(f"Wrong predictions saved to {output_file}")
+        except Exception as e:
+            logger.error(f"Failed to write wrong predictions: {e}")

@@ -1,5 +1,5 @@
 import argparse
-
+import os
 from trainer import Trainer, Trainer_multi, Trainer_woISeq
 from utils import init_logger, load_tokenizer, read_prediction_text, set_seed, MODEL_CLASSES, MODEL_PATH_MAP
 from data_loader import load_and_cache_examples
@@ -41,6 +41,8 @@ if __name__ == '__main__':
     parser.add_argument("--intent_label_file", default="intent_label.txt", type=str, help="Intent Label file")
     parser.add_argument("--slot_label_file", default="slot_label.txt", type=str, help="Slot Label file")
 
+    parser.add_argument("--prediction_dir", default="./preds", type=str, help="The output directory for saving prediction results.")
+    
     parser.add_argument("--model_type", default="bert", type=str, help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
     parser.add_argument("--intent_seq", type=int, default=0, help="whether we use intent seq setting")
     parser.add_argument("--multi_intent", type=int, default=0, help="whether we use multi intent setting")
@@ -85,7 +87,10 @@ if __name__ == '__main__':
     parser.add_argument("--patience", default=0, type=int, help="The initial learning rate for Adam.")
 
     args = parser.parse_args()
-
+    
+    if not os.path.exists(args.prediction_dir):
+        os.makedirs(args.prediction_dir)
+        
     if args.model_dir[-1] == '/':
         args.model_dir = args.model_dir[:-1]
     now = datetime.now()
