@@ -39,6 +39,7 @@ def get_slot_labels(args):
     return [label.strip() for label in open(os.path.join(args.data_dir, args.task, args.slot_label_file), 'r', encoding='utf-8')]
 
 
+
 def load_tokenizer(args):
     return MODEL_CLASSES[args.model_type][2].from_pretrained(args.model_name_or_path, chat_template=None)
 
@@ -49,6 +50,7 @@ def init_logger(args):
                         datefmt='%m/%d/%Y %H:%M:%S',
                         level=logging.INFO,
                         filename='./logs/{}_seed{}_TI{}_attn{}_cls{}_mask{}_ticoef{}_patience{}_{}.log'.format(args.task, args.seed, args.tag_intent, args.intent_attn, args.cls_token_cat, args.num_mask, args.tag_intent_coef, args.patience, now.strftime('%m-%d-%H:%M:%S')))
+
 
 
 def set_seed(args):

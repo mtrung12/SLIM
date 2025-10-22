@@ -282,7 +282,8 @@ processors = {
     'atis_seq': JointProcessorMultiIntent,
     'snips_seq': JointProcessorMultiIntent,
     'mixsnips_single': JointProcessor,
-    'dstc4': JointProcessorMultiIntent,
+    'dstc4': JointProcessorMultiIntent,  
+    'phoatis': JointProcessorMultiIntent,
 }
 
 
