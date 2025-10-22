@@ -283,7 +283,7 @@ processors = {
     'snips_seq': JointProcessorMultiIntent,
     'mixsnips_single': JointProcessor,
     'dstc4': JointProcessorMultiIntent,  
-    'phoatis': JointProcessorMultiIntent,
+    'phoatis': JointProcessor,
 }
 
 
