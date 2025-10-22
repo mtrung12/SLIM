@@ -95,7 +95,7 @@ if __name__ == '__main__':
         args.model_dir = args.model_dir[:-1]
     now = datetime.now()
 
-    args.model_dir = args.model_dir + '_' + now.strftime('%m-%d-%H:%M:%S')
+    #args.model_dir = args.model_dir + '_' + now.strftime('%m-%d-%H:%M:%S')
 
     args.model_name_or_path = MODEL_PATH_MAP[args.model_type]
     main(args)
