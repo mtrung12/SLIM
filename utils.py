@@ -40,7 +40,7 @@ def get_slot_labels(args):
 
 
 def load_tokenizer(args):
-    return MODEL_CLASSES[args.model_type][2].from_pretrained(args.model_name_or_path)
+    return MODEL_CLASSES[args.model_type][2].from_pretrained(args.model_name_or_path, chat_template=None)
 
 
 def init_logger(args):
