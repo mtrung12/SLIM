@@ -6,6 +6,7 @@ from data_loader import load_and_cache_examples
 from datetime import datetime
 import random
 import time
+import os
 
 def main(args):
     init_logger(args)
@@ -27,6 +28,28 @@ def main(args):
     if args.do_eval:
         trainer.load_model()
         trainer.evaluate("test")
+        
+        print("Evaluating on development set...")
+        dev_results = trainer.evaluate("dev")
+        
+        print("Evaluating on test set...")
+        test_results = trainer.evaluate("test")
+
+        # Save dev results
+        output_dev_file = os.path.join(args.model_dir, "eval_results_dev.txt")
+        with open(output_dev_file, "w") as writer:
+            writer.write(f"***** Dev results ({args.task}) *****\n")
+            for key, value in sorted(dev_results.items()):
+                writer.write(f"  {key} = {value}\n")
+            print(f"Dev results saved to {output_dev_file}")
+
+        # Save test results
+        output_test_file = os.path.join(args.model_dir, "eval_results_test.txt")
+        with open(output_test_file, "w") as writer:
+            writer.write(f"***** Test results ({args.task}) *****\n")
+            for key, value in sorted(test_results.items()):
+                writer.write(f"  {key} = {value}\n")
+            print(f"Test results saved to {output_test_file}")
 
 
 if __name__ == '__main__':
