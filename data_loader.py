@@ -282,8 +282,10 @@ processors = {
     'atis_seq': JointProcessorMultiIntent,
     'snips_seq': JointProcessorMultiIntent,
     'mixsnips_single': JointProcessor,
-    'dstc4': JointProcessorMultiIntent,  
-    'phoatis': JointProcessor,
+    'dstc4': JointProcessorMultiIntent, 
+    # add 2 phoatis datasets 
+    'phoatis_word': JointProcessor,
+    'phoatis_syllable': JointProcessor,
 }
 
 
