@@ -1,3 +1,5 @@
+PAD
+UNK
 B-compartment
 I-fare_amount
 I-today_relative
